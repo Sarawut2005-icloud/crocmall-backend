@@ -7,22 +7,21 @@ import helmet from 'helmet';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   
-  // สร้าง App โดยระบุเป็น NestExpressApplication เพื่อใช้คำสั่ง set('trust proxy')
+  // ใช้ NestExpressApplication เพื่อให้รองรับ set('trust proxy') สำหรับ Render
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   
-  // 0. 🛡️ TRUST PROXY (สำคัญมากสำหรับ Render/Cloud Hosting)
-  // ช่วยให้ NestJS อ่าน IP ของ User ได้ถูกต้องผ่าน Proxy ของ Render
+  // 🛡️ 0. TRUST PROXY (สำคัญสำหรับ Render)
   app.set('trust proxy', 1);
 
-  // 1. 🌐 CORS CONFIGURATION (เปิดประตูให้ Vercel เข้ามาดึงข้อมูล)
+  // 1. 🌐 CORS CONFIGURATION (เปิดประตูให้ทุกทิศทาง ทั้ง Local และ Vercel)
   app.enableCors({
-    origin: true, // อนุญาตทุกที่ในช่วงพัฒนาและส่งงาน (หรือใส่ URL ของ Vercel กัปตันลงไป)
+    origin: true, // ตั้งเป็น true เพื่อให้รองรับทุก URL (แก้ปัญหาข้อมูลไม่โหลด)
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
   });
-
-  // 2. 🛡️ SECURITY HELMET (ตั้งค่าความปลอดภัยเบื้องต้น)
+  
+  // 2. 🛡️ SECURITY HELMET (ตั้งค่าให้รองรับการดึงรูปภาพข้ามโดเมน)
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -30,10 +29,11 @@ async function bootstrap() {
     }),
   );
 
-  // 3. 📂 GLOBAL PREFIX (ทำให้ URL เป็นระบบ เช่น https://.../api/products)
+  // 3. 📂 GLOBAL PREFIX (จัดระเบียบ Path ให้เป็นระบบ)
+  // ทุกๆ Request จะต้องนำหน้าด้วย /api เช่น /api/products หรือ /api/auth/signin
   app.setGlobalPrefix('api');
-
-  // 4. 🔍 GLOBAL VALIDATION & ERROR HANDLING (กรองข้อมูลและจัดการ Error)
+  
+  // 4. 🔍 GLOBAL VALIDATION & ERROR HANDLING (ของเดิมกัปตันดีมาก ผมเก็บไว้ให้ครับ)
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -60,9 +60,9 @@ async function bootstrap() {
     ================================================
     🐊 [Crocbyte System] STATUS: ONLINE
     🚀 API URL: https://crocmall-backend.onrender.com/api
-    📡 DATABASE: MongoDB Atlas Connected
-    🛡️ SECURITY: Helmet & JWT Guards Active
-    ✨ ERRORS: Professional Handling Enabled
+    📡 DATABASE:  MongoDB Atlas Connected
+    🛡️ SECURITY:  Helmet & JWT Guards Active
+    ✨ ERRORS:    Professional Handling Enabled
     ================================================
     `);
   } catch (err: any) {
